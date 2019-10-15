@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 	"time"
+
+	"github.com/go-cacher/cacher"
 )
 
 var NotFoundError = errors.New("data not found")
@@ -21,6 +23,10 @@ type cacheData struct {
 }
 
 var DefaultPath = "cache"
+
+func init() {
+	cacher.Register(&FileCache{})
+}
 
 func read(file string) ([]byte, error) {
 	target := filepath.Join(DefaultPath, file)
