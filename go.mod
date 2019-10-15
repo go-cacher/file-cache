@@ -1,5 +1,5 @@
-module github.com/go-cacher/file-cache
+module github.com/gocacher/file-cache
 
-go 1.13
+go 1.11
 
-require github.com/go-cacher/cacher v1.0.3
+require github.com/gocacher/cacher v1.0.4
