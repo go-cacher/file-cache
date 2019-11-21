@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/go-cacher/cacher"
+	"github.com/gocacher/cacher"
 )
 
 var NotFoundError = errors.New("data not found")
