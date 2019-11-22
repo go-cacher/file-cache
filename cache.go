@@ -28,10 +28,6 @@ var DefaultCachePath = "cache"
 // ErrNotFound ...
 var ErrNotFound = errors.New("data not found")
 
-func init() {
-	cacher.Register(&FileCache{})
-}
-
 // New ...
 func New() cacher.Cacher {
 	s, e := filepath.Abs(DefaultCachePath)
