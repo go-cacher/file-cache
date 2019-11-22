@@ -12,9 +12,12 @@ import (
 	"github.com/gocacher/cacher"
 )
 
+// NotFoundError ...
 var NotFoundError = errors.New("data not found")
 
+// FileCache ...
 type FileCache struct {
+	path string
 }
 
 type cacheData struct {
@@ -22,15 +25,21 @@ type cacheData struct {
 	TTL *time.Time
 }
 
-var DefaultPath = "cache"
+// DefaultCachePath ...
+var DefaultCachePath = "cache"
 
 func init() {
 	cacher.Register(&FileCache{})
 }
 
-func read(file string) ([]byte, error) {
-	target := filepath.Join(DefaultPath, file)
-	_, e := os.Stat(DefaultPath)
+// New ...
+func New() cacher.Cacher {
+	return &FileCache{path: DefaultCachePath}
+}
+
+func read(path, file string) ([]byte, error) {
+	target := filepath.Join(path, file)
+	_, e := os.Stat(path)
 	if e != nil {
 		return nil, e
 	}
@@ -45,17 +54,17 @@ func read(file string) ([]byte, error) {
 	return bytes, nil
 }
 
-func write(file string, data []byte) error {
-	target := filepath.Join(DefaultPath, file)
-	_, e := os.Stat(DefaultPath)
+func write(path, file string, data []byte) error {
+	target := filepath.Join(path, file)
+	_, e := os.Stat(path)
 	if e != nil {
 		return e
 	}
 	return ioutil.WriteFile(target, data, os.ModePerm)
 }
 
-func exist(file string) bool {
-	target := filepath.Join(DefaultPath, file)
+func exist(path, file string) bool {
+	target := filepath.Join(path, file)
 	_, e := os.Stat(target)
 	if e == nil {
 		return true
@@ -63,8 +72,8 @@ func exist(file string) bool {
 	return false
 }
 
-func remove(file string) error {
-	target := filepath.Join(DefaultPath, file)
+func remove(path, file string) error {
+	target := filepath.Join(path, file)
 	_, e := os.Stat(target)
 	if e != nil {
 		return e
@@ -72,8 +81,9 @@ func remove(file string) error {
 	return os.Remove(target)
 }
 
+// Get ...
 func (f FileCache) Get(key string) ([]byte, error) {
-	v, err := read(key)
+	v, err := read(f.path, key)
 	if err != nil {
 		return nil, fmt.Errorf("%s:%+v", key, err)
 	}
@@ -86,6 +96,7 @@ func (f FileCache) Get(key string) ([]byte, error) {
 
 }
 
+// GetD ...
 func (f FileCache) GetD(key string, v []byte) []byte {
 	if ret, err := f.Get(key); err == nil {
 		return ret
@@ -93,6 +104,7 @@ func (f FileCache) GetD(key string, v []byte) []byte {
 	return v
 }
 
+// Set ...
 func (f *FileCache) Set(key string, val []byte) error {
 	bytes, e := json.Marshal(&cacheData{
 		Val: val,
@@ -101,9 +113,10 @@ func (f *FileCache) Set(key string, val []byte) error {
 	if e != nil {
 		return fmt.Errorf("%s:%+v", key, e)
 	}
-	return write(key, bytes)
+	return write(f.path, key, bytes)
 }
 
+// SetWithTTL ...
 func (f *FileCache) SetWithTTL(key string, val []byte, ttl int64) error {
 	t := time.Now().Add(time.Duration(ttl))
 	bytes, e := json.Marshal(&cacheData{
@@ -113,27 +126,31 @@ func (f *FileCache) SetWithTTL(key string, val []byte, ttl int64) error {
 	if e != nil {
 		return fmt.Errorf("%s:%+v", key, e)
 	}
-	return write(key, bytes)
+	return write(f.path, key, bytes)
 }
 
+// Has ...
 func (f *FileCache) Has(key string) (bool, error) {
-	return exist(key), nil
+	return exist(f.path, key), nil
 }
 
+// Delete ...
 func (f *FileCache) Delete(key string) error {
-	if err := remove(key); err != nil {
+	if err := remove(f.path, key); err != nil {
 		return fmt.Errorf("%s:%+v", key, err)
 	}
 	return nil
 }
 
+// Clear ...
 func (f *FileCache) Clear() error {
-	if err := os.RemoveAll(DefaultPath); err != nil {
+	if err := os.RemoveAll(f.path); err != nil {
 		return err
 	}
 	return nil
 }
 
+// GetMultiple ...
 func (f *FileCache) GetMultiple(keys ...string) (map[string][]byte, error) {
 	vals := make(map[string][]byte, len(keys))
 	for _, key := range keys {
@@ -145,6 +162,7 @@ func (f *FileCache) GetMultiple(keys ...string) (map[string][]byte, error) {
 	return vals, nil
 }
 
+// SetMultiple ...
 func (f *FileCache) SetMultiple(values map[string][]byte) error {
 	for k, v := range values {
 		e := f.Set(k, v)
@@ -155,6 +173,7 @@ func (f *FileCache) SetMultiple(values map[string][]byte) error {
 	return nil
 }
 
+// DeleteMultiple ...
 func (f *FileCache) DeleteMultiple(keys ...string) error {
 	for _, key := range keys {
 		e := f.Delete(key)
