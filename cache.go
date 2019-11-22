@@ -12,9 +12,6 @@ import (
 	"github.com/gocacher/cacher"
 )
 
-// ErrNotFound ...
-var ErrNotFound = errors.New("data not found")
-
 // FileCache ...
 type FileCache struct {
 	path string
@@ -28,6 +25,9 @@ type cacheData struct {
 // DefaultCachePath ...
 var DefaultCachePath = "cache"
 
+// ErrNotFound ...
+var ErrNotFound = errors.New("data not found")
+
 func init() {
 	cacher.Register(&FileCache{})
 }
@@ -38,7 +38,22 @@ func New() cacher.Cacher {
 	if e != nil {
 		panic(e)
 	}
-	_ = os.MkdirAll(s, 0755)
+	info, e := os.Stat(s)
+
+	switch {
+	case e != nil && !os.IsNotExist(e):
+		panic(e)
+	case e == nil && info.IsDir():
+		break
+	case e == nil && !info.IsDir():
+		panic(fmt.Sprintf("%s is not dir", DefaultCachePath))
+	default:
+		e = os.MkdirAll(s, 0755)
+		if e != nil {
+			panic(e)
+		}
+	}
+
 	return &FileCache{path: DefaultCachePath}
 }
 
