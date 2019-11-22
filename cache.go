@@ -90,6 +90,9 @@ func remove(path, file string) error {
 func (f FileCache) Get(key string) ([]byte, error) {
 	v, err := read(f.path, key)
 	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, ErrNotFound
+		}
 		return nil, fmt.Errorf("%s:%+v", key, err)
 	}
 	var d cacheData
@@ -142,6 +145,9 @@ func (f *FileCache) Has(key string) (bool, error) {
 // Delete ...
 func (f *FileCache) Delete(key string) error {
 	if err := remove(f.path, key); err != nil {
+		if os.IsNotExist(err) {
+			return ErrNotFound
+		}
 		return fmt.Errorf("%s:%+v", key, err)
 	}
 	return nil
