@@ -12,8 +12,8 @@ import (
 	"github.com/gocacher/cacher"
 )
 
-// NotFoundError ...
-var NotFoundError = errors.New("data not found")
+// ErrNotFound ...
+var ErrNotFound = errors.New("data not found")
 
 // FileCache ...
 type FileCache struct {
@@ -34,6 +34,11 @@ func init() {
 
 // New ...
 func New() cacher.Cacher {
+	s, e := filepath.Abs(DefaultCachePath)
+	if e != nil {
+		panic(e)
+	}
+	_ = os.MkdirAll(s, 0755)
 	return &FileCache{path: DefaultCachePath}
 }
 
@@ -144,10 +149,7 @@ func (f *FileCache) Delete(key string) error {
 
 // Clear ...
 func (f *FileCache) Clear() error {
-	if err := os.RemoveAll(f.path); err != nil {
-		return err
-	}
-	return nil
+	return os.RemoveAll(f.path)
 }
 
 // GetMultiple ...
@@ -157,7 +159,7 @@ func (f *FileCache) GetMultiple(keys ...string) (map[string][]byte, error) {
 		if ret, e := f.Get(key); e == nil {
 			vals[key] = ret
 		}
-		return nil, fmt.Errorf("%s:%+v", key, NotFoundError)
+		return nil, fmt.Errorf("%s:%+v", key, ErrNotFound)
 	}
 	return vals, nil
 }
